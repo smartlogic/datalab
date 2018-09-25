@@ -7,8 +7,16 @@ export default class Utility {
   /**
    * Creates a new node in the document
    */
-  static createNode(el) {
-    return document.createElement(el);
+  static createNode(elementName, props = {}) {  
+    const element = document.createElement(elementName);
+    Object.entries(props).map(([prop, value]) => {
+      if (prop === 'innerHTML') {
+        element.innerHTML = value;
+      } else {
+        element.setAttribute(prop, value);
+      }
+    });
+    return element;
   }
 
   /**
@@ -18,8 +26,8 @@ export default class Utility {
     const selectedIndicator = getSelectedItem('select-indicator-group');
     const selectedCharacteristicGroup = getSelectedItem('select-characteristic-group');
 
-    $(".help-definition.indicator-group").html(this.getDefinition(selectedIndicator));
-    $(".help-definition.characteristic-group").html(this.getDefinition(selectedCharacteristicGroup));
+    $(".help-definition.indicator-group").html(Utility.getDefinition(selectedIndicator));
+    $(".help-definition.characteristic-group").html(Utility.getDefinition(selectedCharacteristicGroup));
   }
 
   /**
@@ -30,8 +38,8 @@ export default class Utility {
    */
   static getOverrideValue(id, fallback) {
     let overRideValue = document.getElementById(id).value;
-    if (!!sessionStorage.saved_style && sessionStorage.saved_style==1) {
-        overRideValue = sessionStorage.getItem('styles.'+id);
+    if (!!sessionStorage.getItem('saved_style') && sessionStorage.getItem('saved_style') == 1) {
+      overRideValue = sessionStorage.getItem('styles.'+id);
     }
     return overRideValue || fallback;
   }
@@ -41,7 +49,14 @@ export default class Utility {
    */
   static getString(item) {
     const labelId = item['label.id'];
-    return this.getStringById(labelId);
+    return Utility.getStringById(labelId);
+  }
+
+  /**
+   * Gets the selected language
+   */
+  static getSelectedLanguage() {
+    $('#select-language option:selected').val();
   }
 
   /**
@@ -49,8 +64,8 @@ export default class Utility {
    * Uses the strings loaded into local storage, provided by the API
    */
   static getStringById(labelId) {
-    const strings = this.loadStringsFromsessionStorage();
-    const lang = Selectors.getSelectedLanguage();
+    const strings = this.loadStringsFromSessionStorage();
+    const lang = Utility.getSelectedLanguage();
     const string = strings[labelId];
     if (string) {
       const enString = string['en'];
@@ -64,7 +79,13 @@ export default class Utility {
   }
 
   /**
-   * Parse date values
+   * Parses dates to Unix timestamps.
+   * Expects dates to either be presented in MM-DD-YYYY form, or MM-YYYY form.
+   * If the day is missing, it will be inferred to the first of the month.
+   *
+   * @param {string} date - a date string in either MM-YYYY or MM-DD-YYYY form.
+   *
+   * @returns {number} - a Unix timestamp representing the date provided.
    */
   static parseDate(date) {
     const splitDate = date.split("-");
@@ -78,7 +99,7 @@ export default class Utility {
   /**
    * @private
    */
-  static loadStringsFromsessionStorage() {
+  static loadStringsFromSessionStorage() {
     return JSON.parse(sessionStorage.getItem('pma2020Strings'));
   }
 
@@ -90,14 +111,18 @@ export default class Utility {
     const itemNameId = item.dataset.labelId;
 
     if (definitionId && itemNameId) {
-      const definition = this.getStringById(definitionId);
-      const itemName = this.getStringById(itemNameId);
+      const definition = Utility.getStringById(definitionId);
+      const itemName = Utility.getStringById(itemNameId);
       return `${itemName}: ${definition}`;
     } else {
       return '';
     }
   }
 
+  /**
+   * Indicates if the client browser is an IE variant
+   * @return {boolean} true if the client is IE
+   */
   static isIE() {
     const ua = window.navigator.userAgent;
     const msie = ua.indexOf("MSIE ");

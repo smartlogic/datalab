@@ -3,17 +3,14 @@
  */
 export default class Selectors {
   /**
-   * Gets the selected language
-   */
-  static getSelectedLanguage() {
-    return $('#select-language option:selected').val();
-  }
-
-  /**
    * Gets the value of the element with id
    */
   static getSelectedValue(id) {
-    return this.getSelectedItem(id).value;
+    const selectedItem = this.getSelectedItem(id);
+    if (selectedItem) {
+      return selectedItem.value;
+    }
+    return null;
   }
 
   /**
@@ -35,9 +32,10 @@ export default class Selectors {
    */
   static getSelectedItem(id) {
     const el = document.getElementById(id);
-    const selectedVal = el.options[el.selectedIndex];
-
-    return selectedVal;
+    if (el.selectedIndex >= 0) {
+      return el.options[el.selectedIndex];
+    }
+    return null;
   }
 
   /**
@@ -46,11 +44,17 @@ export default class Selectors {
   static getSelectedCountryRounds() {
     const countries = [];
     const checkboxes = $("#countryRoundModal input[type=checkbox]:checked");
-
     checkboxes.map(checkbox => {
       countries.push(checkboxes[checkbox].value);
     });
-
     return countries;
+  }
+
+  /**
+   * Gets the currently selected indicators.
+   */
+  static getSelectedIndicators() {
+    const indicators = Selectors.getSelectedValue('select-indicator-group');
+    return indicators ? indicators : [];
   }
 }

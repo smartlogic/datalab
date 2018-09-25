@@ -9,32 +9,43 @@ import Tooltips from './tooltip';
  */
 export default class Validation {
   /**
+   * Validation Class Constructor
+   */
+  constructor(network) {
+    /**
+     * The network object
+     * @type {Network}
+     */
+    this.network = network;
+  }
+
+  /**
    * Check the pie options
    */
-  static checkPie() {
-    const selectedIndicator = Selectors.getSelectedItem('select-indicator-group');
+  checkPie() {
+    const selectedIndicator = Selectors.getSelectedIndicators();
     const countryRounds = Selectors.getSelectedCountryRounds();
     const pieChartType = $("#chart-types").find($("#option-pie")).parent();
 
     if (countryRounds.length > 1) {
       pieChartType.remove();
-    } else if (selectedIndicator.dataset.type && selectedIndicator.dataset.type !== 'distribution') {
+    } else if (selectedIndicator.dataset && selectedIndicator.dataset.type && selectedIndicator.dataset.type !== 'distribution') {
       pieChartType.remove();
     } else {
       if (pieChartType.length <= 0) {
-        const buttonLabel = Utility.createNode('label');
-        buttonLabel.className = 'btn btn-primary';
+        const buttonLabel = Utility.createNode('label', {
+          class: 'btn btn-primary'
+        });
+        const pieChartInput = Utility.createNode('input', {
+          type: 'radio',
+          name: 'options',
+          id: 'option-pie',
+          autocomplete: 'off',
+          checked: '',
+          'data-type': 'pie'
+        });
 
-        const pieChartInput = Utility.createNode('input');
-        pieChartInput.setAttribute('type', 'radio');
-        pieChartInput.setAttribute('name', 'options');
-        pieChartInput.setAttribute('id', 'option-pie');
-        pieChartInput.setAttribute('autocomplete', 'off');
-        pieChartInput.setAttribute('checked', '');
-        pieChartInput.setAttribute('data-type', 'pie');
-
-        const pieIcon = Utility.createNode('i');
-        pieIcon.className = 'fa fa-pie-chart';
+        const pieIcon = Utility.createNode('i', { class: 'fa fa-pie-chart' });
 
         buttonLabel.append(pieChartInput);
         buttonLabel.append(pieIcon);
@@ -46,7 +57,7 @@ export default class Validation {
   /**
    * Check to see if over time option is valid
    */
-  static checkOverTime() {
+  checkOverTime() {
     const countryRounds = Selectors.getSelectedCountryRounds();
     const overTimeCheckbox = $("#dataset_overtime");
 
@@ -61,7 +72,7 @@ export default class Validation {
   /**
    * Check to see if black and white is allowed
    */
-  static checkBlackAndWhite() {
+  checkBlackAndWhite() {
     const countryRounds = Selectors.getSelectedCountryRounds();
     const blackAndWhiteCheck = $("#dataset_black_and_white");
     const overTimeCheckbox = $("#dataset_overtime")[0];
@@ -83,16 +94,16 @@ export default class Validation {
    * and enabled or disable the tooltip indicating
    * why charting can't run when it can't.
    */
-  static checkCharting() {
+  checkCharting() {
     const countryRounds = Selectors.getSelectedCountryRounds().length;
-    const selectedIndicator = Selectors.getSelectedValue('select-indicator-group').length;
+    const selectedIndicator = Selectors.getSelectedIndicators().length;
     const selectedCharacteristicGroup = Selectors.getSelectedValue('select-characteristic-group').length;
     const chartType = Selectors.getSelectedChartType();
 
     if (countryRounds > 0 && selectedIndicator > 0 && selectedCharacteristicGroup > 0 &&
       chartType != undefined &&
       chartType.length > 0) {
-      CSV.setDownloadUrl();
+      CSV.setDownloadUrl(this.network);
       $('.submit-chart').prop('disabled', '');
       Tooltips.disableBtnSubmitChart();
       $('.reset-chart').prop('disabled', '');

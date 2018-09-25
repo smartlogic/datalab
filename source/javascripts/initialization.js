@@ -1,4 +1,3 @@
-import Network from './network';
 import Utility from './utility';
 import URLParse from './url-parse';
 import Definitions from './definitions';
@@ -18,7 +17,7 @@ export default class Initialization {
    * Store the translation strings in local storage if able
    * @private
    */
-  static initializeStrings(strings) {
+  initializeStrings(strings) {
     if (typeof(Storage) !== "undefined") {
       sessionStorage.removeItem('pma2020Strings', strings);
       sessionStorage.pma2020Strings = JSON.stringify(strings);
@@ -31,14 +30,12 @@ export default class Initialization {
    * Build out the language select based on an array of languages
    * @private
    */
-  static initializeLanguage(languages) {
-    for (let k in languages) {
-      if (languages[k]) {
-        let opt = Utility.createNode('option');
-        opt.value = k;
-        opt.innerHTML = languages[k];
-        $('#select-language').append(opt);
-      }
+  initializeLanguage(languages) {
+    for(var k in languages) {
+      let opt = Utility.createNode('option', { 
+        value: k, innerHTML: languages[k]
+      });
+      $('#select-language').append(opt);
     }
     /*Translate.google_translate_support_lang().then(data => {
       const langs = data.data.languages;
@@ -58,24 +55,24 @@ export default class Initialization {
    * loaded from the API
    * @private
    */
-  static initializeCharacteristicGroups(characteristicGroups) {
+  initializeCharacteristicGroups(characteristicGroups) {
     characteristicGroups.forEach(group => {
       const optGroupName = Utility.getString(group);
-      let optGroup = $('<optgroup></optgroup>').attr({
-          'class': 'i18nable-optgroup',
-          'data-key': group["label.id"],
-          'label': optGroupName
+      let optGroup = Utility.createNode('optgroup', {
+        label: optGroupName,
+        class: 'i18nable-optgroup',
+        'data-key': group['label.id']
       });
 
       group.characteristicGroups.forEach(characteristic => {
-        let opt = Utility.createNode('option');
-
-        opt.value = characteristic.id;
-        opt.className = 'i18nable';
-        opt.setAttribute('data-definition-id', characteristic["definition.id"]);
-        opt.setAttribute('data-label-id', characteristic["label.id"]);
-        opt.setAttribute('data-key', characteristic["label.id"]);
-        opt.innerHTML = Utility.getString(characteristic);
+        let opt = Utility.createNode('option', {
+          value: characteristic.id,
+          class: 'i18nable',
+          'data-definition-id': characteristic['definition.id'],
+          'data-label-id': characteristic['label.id'],
+          'data-key': characteristic['label.id'],
+          innerHTML: Utility.getString(characteristic)
+        });
         optGroup.append(opt);
       });
       $('#select-characteristic-group').append(optGroup);
@@ -87,25 +84,26 @@ export default class Initialization {
    * loaded from the API
    * @private
    */
-  static initializeIndicators(indicators) {
+  initializeIndicators(indicators) {
     indicators.forEach(group => {
       const optGroupName = Utility.getString(group);
-      let optGroup = $('<optgroup></optgroup>').attr({
-          'class': 'i18nable-optgroup',
-          'data-key': group["label.id"],
-          'label': optGroupName
+      let optGroup = Utility.createNode('optgroup', {
+        label: optGroupName,
+        class: '18nable-optgroup',
+        'data-key': group['label.id']
       });
 
       group.indicators.forEach(indicator => {
-        let opt = Utility.createNode('option');
+        let opt = Utility.createNode('option', {
+          value: indicator.id,
+          class: 'i18nable',
+          'data-definition-id': indicator['definition.id'],
+          'data-label-id': indicator['label.id'],
+          'data-key': indicator['label.id'],
+          'data-type': indicator['type'],
+          innerHTML: Utility.getString(indicator),
+        });
 
-        opt.value = indicator.id;
-        opt.className = 'i18nable';
-        opt.setAttribute('data-definition-id', indicator["definition.id"]);
-        opt.setAttribute('data-label-id', indicator["label.id"]);
-        opt.setAttribute('data-key', indicator["label.id"]);
-        opt.setAttribute('data-type', indicator["type"]);
-        opt.innerHTML = Utility.getString(indicator);
         optGroup.append(opt);
       });
       $('#select-indicator-group').append(optGroup);
@@ -113,104 +111,136 @@ export default class Initialization {
   }
 
   /**
+   * Builds a panel heading node, which is a `div` containing a title `div`
+   * and a link `a`.
+   * @param {object} country - survey data on a given country.
+   * @private
+   */
+  createPanelHeading(country) {
+    const countryName = Utility.getString(country);
+    const panelHeading  = Utility.createNode('div', {
+      class: 'panel-heading',
+      role: 'tab',
+      id: countryName
+    });
+
+    let panelTitle  = Utility.createNode('div', {
+      class: 'panel-title'
+    });
+
+    let panelLink  = Utility.createNode('a', {
+      href: `#collapse${country['label.id']}`,
+      role: 'button',
+      'data-toggle': 'collapse',
+      'data-parent': '#accordion',
+      'data-key': country['label.id'],
+      class: 'i18nable',
+      innerHTML: countryName,
+    });
+
+    panelTitle.append(panelLink);
+    panelHeading.append(panelTitle);
+    return panelHeading;
+  }
+
+  /**
    * Builds the html for survey countries
    * @private
    */
-  static initializeSurveyCountries(surveyCountries) {
-    // const language = Selectors.getSelectedLanguage();
+  initializeSurveyCountries(surveyCountries) {
+    const language = Utility.getSelectedLanguage();
+    const fragment = new DocumentFragment();
 
     surveyCountries.forEach(country => {
-      const countryName = Utility.getString(country);
-
-      let panelContainer = $('<div></div>').attr({
-        'class': 'panel panel-default'
-      });
-
-      let panelBodyContainer = $('<div></div>').attr({
-        'id': `collapse${country["label.id"]}`,
-        'class': 'panel-collapse collapse'
-      });
-
-      let panelBody = $('<div></div>').attr({
-        'class': 'panel-body'
-      });
-
-      let panelHeading = $('<div></div>').attr({
-        'class': 'panel-heading',
-        'role': 'tab',
-        'id': countryName
-      });
-
-      let panelTitle = $('<div></div>').attr({
-        'class': 'panel-title'
-      });
-
-      let panelLink = $('<a></a>').attr({
-        'href': `#collapse${country["label.id"]}`,
-        'role': 'button',
-        'data-toggle': 'collapse',
-        'data-parent': '#accordion',
-        'data-key': country["label.id"],
-        'class': 'i18nable',
-      }).html(countryName);
-
-      panelTitle.append(panelLink);
-      panelHeading.append(panelTitle);
-      panelContainer.append(panelHeading);
-
-      country.geographies.forEach(geography => {
-        const geographyName = Utility.getString(geography);
-
-        let listHeader = $('<h4></h4>').attr({
-          'data-key': geography["label.id"],
-          'class': 'i18nable',
-        }).html(geographyName);
-
-        panelBody.append(listHeader);
-
-        geography.surveys.forEach((survey, i) => {
-          const surveyName = Utility.getString(survey);
-          const surveyId = survey["id"];
-
-          let listItem = $('<div></div>');
-
-          let surveyInputClassName = 'country-round';
-          if (i === geography.surveys.length - 1) {
-            surveyInputClassName = 'country-round latest';
-          }
-          let surveyInput = $('<input/>').attr({
-            'type': 'checkbox',
-            'name': surveyId,
-            'value': surveyId,
-            'id': surveyId,
-            'class': surveyInputClassName
-          });
-
-          let surveyInputLabel = $('<label></label>').attr({
-            'data-key': survey["label.id"],
-            'class': 'i18nable',
-            'for': surveyId,
-          }).html(surveyName);
-
-          listItem.append(surveyInput);
-          listItem.append(surveyInputLabel);
-          panelBody.append(listItem);
-        });
-      });
-
-      panelBodyContainer.append(panelBody);
-      panelContainer.append(panelBodyContainer);
-
-      $('#countryRoundModal .modal-body').append(panelContainer);
+      const panelContainer = this.createPanelContainer(country)
+      fragment.appendChild(panelContainer);
     });
+
+    $('#countryRoundModal .modal-body').append(fragment);
+  }
+
+  /**
+   * Creates a panel container node consisting of a `div` with an internal
+   * list
+   * @param {object} country - survey data of a given country.
+   */
+  createPanelContainer(country) {
+    let panelContainer  = Utility.createNode('div', {
+      class: 'panel panel-default'
+    });
+
+    // Create panel heading.
+    const panelHeading = this.createPanelHeading(country);
+    panelContainer.append(panelHeading);
+
+    const panelBodyContainer = Utility.createNode('div', {
+      id: `collapse${country["label.id"]}`,
+      class: 'panel-collapse collapse'
+    });
+
+    let panelBody  = Utility.createNode('div', {
+      class: 'panel-body'
+    });
+
+    country.geographies.forEach(geography => {
+      const geographyName = Utility.getString(geography);
+
+      let listHeader = Utility.createNode('h4', {
+        'data-key': geography['label.id'],
+        class: 'i18nable',
+        innerHTML: geographyName
+      });
+
+      panelBody.append(listHeader);
+
+      geography.surveys.forEach((survey, i) => {
+        const listItem = this.createListItem(survey, i, geography.surveys.length);
+        panelBody.append(listItem);
+      });
+    });
+
+    panelBodyContainer.append(panelBody);
+    panelContainer.append(panelBodyContainer);
+    return panelContainer;
+  }
+
+
+  /**
+   * Create the list item for each survey provided
+   * @param {object} survey - survey data of a given country.
+   * @param {integer} index - the survey position in the list
+   * @param {integer} len - the number of surveys in the country
+   * @private
+   */
+  createListItem(survey, index, len) {
+    const listItem  = Utility.createNode('div', );
+    const surveyId = survey['id'];
+    const surveyInput = Utility.createNode('input', {
+      type: 'checkbox',
+      name: surveyId,
+      value: surveyId,
+      id: surveyId,
+      class: index === len - 1 ? 'country-round latest' : 'country-round'
+    });
+    listItem.append(surveyInput);
+    const surveyName = Utility.getString(survey);
+    const surveyInputLabel = Utility.createNode('label', {
+      'data-key': survey['label.id'],
+      class: 'i18nable',
+      htmlFor: surveyId,
+      innerHTML: surveyName
+    });
+
+    listItem.append(surveyInputLabel);
+    return listItem;
   }
 
   /**
    * loads up the saved style data from local storage
    * @public
    */
-  static initializeStyles() {
-    if (!!sessionStorage.saved_style && sessionStorage.saved_style == 1) {
+  initializeStyles() {
+    if (!!sessionStorage.getItem('saved_style') && sessionStorage.getItem('saved_style') == 1) {
       for (let i=0; i<sessionStorage.length; i++) {
         const key = sessionStorage.key(i);
         if (key.startsWith('styles.')) {
@@ -245,11 +275,10 @@ export default class Initialization {
   /**
    * Main entry point for initialization,
    * does the actual first api call to get data
-   * @param {Chart} chart - The one and only chart object
    * @public
    */
-  static initialize(chart) {
-    Network.get("datalab/init").then(res => {
+  initialize(network, chart) {
+    network.get("datalab/init").then(res => {
       console.log("------------------------------------------------");
       console.log(`PMA2020 Datalab API Version: ${res.metadata.version}`);
       console.log(`PMA2020 Datalab Client:      ${env.version}`);
@@ -263,27 +292,29 @@ export default class Initialization {
 
       $('#select-characteristic-group').selectpicker('val', 'none');
       $('.selectpicker').selectpicker('refresh');
-      if (URLParse.getQuery() !== false) {
-          const query = URLParse.parseQuery();
-          $('#select-indicator-group').selectpicker('val', query['indicators']);
-          $('#select-characteristic-group').selectpicker('val', query['characteristicGroups']);
-          $('#select-language').selectpicker('val', query['lang']);
-          if (query['lang']=='fr') {
-              Translate.translatePage(); 
-          }
-          $('#chart-types #option-'+query['chartType']).click();
-          const selectedCountries = query['surveyCountries'].split(',');
-          selectedCountries.forEach(countryId => {
-            $('#'+countryId).click();
-          });
-          if (query['overTime']=='true') {
-            $('#dataset_overtime').prop('checked', true);
-            $('#dataset_overtime').prop('disabled', false);
-          }
-          Definitions.setDefinitionText();
-          chart.data(query).then(()=>{
-            this.initializeStyles();
-          });
+      const url = window.location.href;
+      const queryString = URLParse.getQuery(url);
+      if (queryString !== false) {
+        const query = URLParse.parseQuery(queryString);
+        $('#select-indicator-group').selectpicker('val', query['indicators']);
+        $('#select-characteristic-group').selectpicker('val', query['characteristicGroups']);
+        $('#select-language').selectpicker('val', query['lang']);
+        if (query['lang']=='fr') {
+            Translate.translatePage(); 
+        }
+        $('#chart-types #option-'+query['chartType']).click();
+        const selectedCountries = query['surveyCountries'].split(',');
+        selectedCountries.forEach(countryId => {
+          $('#'+countryId).click();
+        });
+        if (query['overTime']=='true') {
+          $('#dataset_overtime').prop('checked', true);
+          $('#dataset_overtime').prop('disabled', false);
+        }
+        Definitions.setDefinitionText();
+        chart.data(query).then(()=>{
+          this.initializeStyles();
+        });
       }
     });
     // Replace the footer year with the current year

@@ -1,9 +1,7 @@
-import Network from './network';
 import Utility from './utility';
-import Selectors from './selectors';
-import Combo from './combo';
-import Validation from './validation';
 import Initialization from './initialization';
+import Selectors from './selectors';
+import CSV from './csv';
 import Highcharts from 'highcharts';
 import highchartTheme from './chart-theme';
 require('highcharts/modules/exporting')(Highcharts);
@@ -15,18 +13,44 @@ export default class Chart {
   /**
    * Chart Class Constructor
    */
-  constructor() {
+  constructor(network, combo, validation) {
+    /**
+     * The network object
+     * @type {Network}
+     */
+    this.network = network;
+
+    /**
+     * The combo object
+     * @type {Combo}
+     */
+    this.combo = combo;
+
+    /**
+     * The validation object
+     * @type {Validation}
+     */
+    this.validation = validation;
+
     /**
      * The currently rendered chart from Highcharts
      * @type {object}
      */
     this.chartObj = {};
+
     /**
      * The currently rendered chart options
      * that were sent to Highcharts
      * @type {object}
      */
     this.option_obj = {};
+
+    /**
+     * The currently rendered chart options
+     * that were sent to Highcharts
+     * @type {Initialization}
+     */
+    this.initialization = new Initialization();
   }
 
   /**
@@ -136,16 +160,26 @@ export default class Chart {
   }
 
   /**
+   * Generate the date in yyyy-mm-dd format
+   * @return {string} the date in string format
+   * @private
+   */
+  generateDate() {
+    return new Date().toJSON().slice(0, 10);
+  }
+
+  /**
    * Generate chart citation based on the current date
    * and passed in partners
    * @param {Array} partners - an array of partners to mention in the citation
    * @return {string} citation string
    * @private
    */
-  generateCitation(partners) {
+  generateCitation(partners = []) {
     let citation = "Performance Monitoring and Accountability 2020. Johns Hopkins University;";
     citation = [citation, ...partners];
-    return `${citation} ${new Date().toJSON().slice(0, 10)}`;
+    const date = this.generateDate();
+    return `${citation} ${date}`;
   }
 
   /**
@@ -296,12 +330,10 @@ export default class Chart {
    * @private
    */
   generatePieData(charGroup, charGroups, dataPoints) {
-    let series = [];
     const charGroupNames = this.getCharacteristicGroupNames(charGroups);
-
-    charGroupNames.forEach((charGroup) => {
-      const dataPoint = dataPoints[0].values[charGroupNames.indexOf(charGroup)];
-      series.push({ name: charGroup, y: dataPoint.value });
+    const series = charGroupNames.map((group) => {
+      const dataPoint = dataPoints[0].values[charGroupNames.indexOf(group)];
+      return { name: group, y: dataPoint.value };
     });
 
     return [{ name: charGroup, data: series }];
@@ -310,44 +342,35 @@ export default class Chart {
   /**
    * @private
    */
-  generateOverTimeSeriesData(dataPoints) {
-    return dataPoints.reduce((res, dataPoint) => {
-      // const characteristicGroupId = dataPoint["characteristic.label.id"];
+  generateOverTimeSeriesData(dataPoints = []) {
+    return dataPoints.map(dataPoint => {
+      const characteristicGroupId = dataPoint["characteristic.label.id"];
 
-      return [
-        ...res,
-        {
-          name: Utility.getStringById(dataPoint["country.label.id"]),
-          data: dataPoint.values.reduce((tot, item) => {
-            const utcDate = Utility.parseDate(item["survey.date"]);
-
-            return [...tot, [utcDate, item.value]];
-          }, [])
-        }
-      ];
-    }, []);
+      return {
+        name: Utility.getStringById(characteristicGroupId),
+        data: dataPoint.values.map(item => {
+          const utcDate = Utility.parseDate(item["survey.date"]);
+          return [utcDate, item.value];
+        })
+      }
+    })
   }
 
   /**
    * Builds the series array of data for Highcharts
    * @private
    */
-  generateSeriesData(dataPoints) {
-    return dataPoints.reduce((res, dataPoint) => {
+  generateSeriesData(dataPoints = []) {
+    return dataPoints.map(dataPoint => {
       const countryId = dataPoint["country.label.id"];
       const geographyId = dataPoint["geography.label.id"];
       const surveyId = dataPoint["survey.label.id"];
 
-      return [
-        ...res,
-        {
-          name: this.generateSeriesName(countryId, geographyId, surveyId),
-          data: dataPoint.values.reduce((tot, item) => {
-            return [...tot, item.value];
-          }, [])
-        }
-      ];
-    }, []);
+      return {
+        name: this.generateSeriesName(countryId, geographyId, surveyId),
+        data: dataPoint.values.map(item => item.value)
+      }
+    })
   }
 
   /**
@@ -452,7 +475,7 @@ export default class Chart {
     const selectedSurveys = query['surveyCountries'].split(',');
     const selectedIndicator = query['indicators'];
     const selectedCharacteristicGroup = query['characteristicGroups'];
-    const overTime = query['overTime']=='true';
+    const overTime = query['overTime'] == 'true';
     const chartType = query['chartType'];
 
     const opts = {
@@ -460,30 +483,30 @@ export default class Chart {
       "indicator": selectedIndicator,
       "characteristicGroup": selectedCharacteristicGroup,
       "overTime": overTime,
-    };
+    }
 
     return new Promise((resolve, reject) => {
-        Network.get("datalab/data", opts).then(res => {
-          if (overTime) { // Overtime series option selected
-            this.option_obj = this.generateOverTimeChart(res);
-          } else if (chartType === 'pie') { // Pie chart type option selected
-            this.option_obj = this.generatePieChart(res);
-          } else { // Everything else
-            this.option_obj = this.generateChart(res);
-          }
+      this.network.get("datalab/data", opts).then(res => {
+        if (overTime) { // Overtime series option selected
+          this.option_obj = this.generateOverTimeChart(res);
+        } else if (chartType === 'pie') { // Pie chart type option selected
+          this.option_obj = this.generatePieChart(res);
+        } else { // Everything else
+          this.option_obj = this.generateChart(res);
+        }
 
-          this.chartObj = Highcharts.chart('chart-container', this.option_obj);
-          if (sessionStorage.getItem('switch.bw')==='true') {
-            this.chartObj.update(highchartTheme.gray());
-          }
+        this.chartObj = Highcharts.chart('chart-container', this.option_obj);
+        if (sessionStorage.getItem('switch.bw')==='true') {
+          this.chartObj.update(highchartTheme.gray());
+        }
 
-          Combo.filter();
-          Validation.checkOverTime();
-          Validation.checkBlackAndWhite();
-          Validation.checkPie();
-          Validation.checkCharting();
-          resolve();
-        });
+        this.combo.filter();
+        this.validation.checkOverTime();
+        this.validation.checkBlackAndWhite();
+        this.validation.checkPie();
+        this.validation.checkCharting();
+        resolve();
+      });
     });
   }
 
@@ -612,11 +635,11 @@ export default class Chart {
   }
 
   /**
-   * Initialize the chart by calling the Initialization with
+   * Initialize the chart by calling the initialization with
    * this chart object.
    */
   initialize() {
-    Initialization.initialize(this);
+    this.initialization.initialize(this.network, this);
   }
 
   /**

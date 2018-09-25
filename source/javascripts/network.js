@@ -11,7 +11,7 @@ export default class Network {
    * Display that the network is loading data
    * @private
    */
-  static displayLoading() {
+  displayLoading() {
     $(".chart-control").prop('disabled', true);
     $(".row-error").hide();
     $(".row-loading").show();
@@ -21,7 +21,7 @@ export default class Network {
    * Display to the user that there was an error
    * @private
    */
-  static displayError() {
+  displayError() {
     $(".row-loading").hide();
     $(".row-error").show();
   }
@@ -30,7 +30,7 @@ export default class Network {
    * Remove all alerts and error info
    * @private
    */
-  static removeAlerts() {
+  removeAlerts() {
     $(".chart-control").prop('disabled', false);
     $(".row-loading").hide();
     $(".row-error").hide();
@@ -42,7 +42,7 @@ export default class Network {
    * @return {object} the JSON response as an object
    * @private
    */
-  static sendRequest(request) {
+  sendRequest(request) {
     this.displayLoading();
     return fetch(request).then((response) => {
       this.removeAlerts();
@@ -54,6 +54,10 @@ export default class Network {
     });
   }
 
+  /**
+   * Send an IE friendly API request
+   * @private
+   */
   static sendIERequest(url) {
     this.displayLoading();
     const self = this;
@@ -85,16 +89,15 @@ export default class Network {
    * @param {string} path - The URL path within the API
    * @param {object} opts - Map of options for the query
    */
-  static buildUrl(path, opts) {
+  buildUrl(path, opts) {
     const baseUrl = env.api_url || 'http://api.pma2020.org';
-    let url = `${baseUrl}/v1/${path}`;
+    const url =  `${baseUrl}/v1/${path}`;
     if (opts) {
-      url = `${url}?`;
-      for (let k in opts) {
-        if (opts[k]) {
-          url = `${url}${k}=${opts[k]}&`;
-        }
-      }
+      const params = Object
+        .entries(opts)
+        .map(([k, v]) => `${k}=${v}`)
+        .join('&');
+      return [url, params].join('?');
     }
     return url;
   }
@@ -105,7 +108,7 @@ export default class Network {
    * @param {object} opts - Map of options for the query
    * @return {object} the json object from the API
    */
-  static get(path, opts) {
+  get(path, opts) {
     if (Utility.isIE()) {
       return this.sendIERequest(this.buildUrl(path, opts));
     } else {
@@ -126,6 +129,7 @@ export default class Network {
       }
     }
     return url;
+>>>>>>> 58d50b95cb40f6769f3405b2aa2d0954b6d239f9
   }
 
   static getFromExternalUrl(path, opts) {

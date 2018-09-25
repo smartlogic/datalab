@@ -21,12 +21,16 @@ import Validation from './validation';
 import Translate from './translate';
 import Definitions from './definitions';
 import Tooltips from './tooltip';
+import Network from './network';
 import Driver from 'driver.js/dist/driver.min.js';
 
 // Bind on the document ready
 $(function() {
   // Initialize the Tooltips and Chart
-  const chart = new Chart();
+  const network = new Network();
+  const combo = new Combo(network);
+  const validation = new Validation(network);
+  const chart = new Chart(network, combo, validation);
   Tooltips.initialize();
   chart.initialize();
 
@@ -50,19 +54,19 @@ $(function() {
     $(`#select-${clearId}`).selectpicker('deselectAll');
     $(`#select-${clearId}`).selectpicker('refresh');
 
-    Combo.filter();
-    Validation.checkCharting();
-    Validation.checkPie();
+    combo.filter();
+    validation.checkCharting();
+    validation.checkPie();
   });
 
   // bind for when the country round modal closes
   $("#finishCountryRoundModal").click(() => {
     Interaction.finishModal();
-    Validation.checkOverTime();
-    Validation.checkBlackAndWhite();
-    Validation.checkCharting();
-    Validation.checkPie();
-    Combo.filter();
+    validation.checkOverTime();
+    validation.checkBlackAndWhite();
+    validation.checkCharting();
+    validation.checkPie();
+    combo.filter();
   });
 
   // bind for the indicator group selection
@@ -76,9 +80,9 @@ $(function() {
 
   // bind for the characteristic group selection
   $("#select-characteristic-group").change(() => {
-    Combo.filter();
-    Validation.checkPie();
-    Validation.checkCharting();
+    combo.filter();
+    validation.checkPie();
+    validation.checkCharting();
     Definitions.setDefinitionText();
   });
 
@@ -90,9 +94,9 @@ $(function() {
   $("#select-all").click(() => (Interaction.selectAll()));
   $("#select-latest").click(() => (Interaction.selectLatest()));
   $("#clear-all").click(() => (Interaction.clear()));
-  $("#dataset_overtime").click(() => (Validation.checkBlackAndWhite()));
+  $("#dataset_overtime").click(() => (validation.checkBlackAndWhite()));
   $("#closeCountryRoundModal").click(() => (Interaction.closeModal()));
-  $("#chart-types input").click(() => (Validation.checkCharting()));
+  $("#chart-types input").click(() => (validation.checkCharting()));
   $(".submit-chart").click(() => (chart.loadData()));
   $(".reset-chart").click(() => (Interaction.resetChart(chart)));
   $(".chart-style-wrapper .form-group .col-lg-6 label").click(e => {

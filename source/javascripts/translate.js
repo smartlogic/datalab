@@ -1,4 +1,4 @@
-import utility from './utility';
+import Utility from './utility';
 import Selectors from './selectors';
 
 /**
@@ -12,18 +12,19 @@ export default class Translate {
    */
   static google_translate_api_key = 'AIzaSyDfvRtTJrdWsLgcnu6shuW-4-YWE_fiFxI';
   static runTranslate(items, type) {
-      items.each(i => {
-        const item = items[i];
-        const key = item.dataset.key;
-        const translatedValue = utility.getStringById(key);
-        if (translatedValue) {
-          if (type === 'optgroup') {
-            item.label = translatedValue;
-          } else {
-            item.innerHTML = translatedValue;
-          }
+    items.each(i => {
+      const item = items[i];
+      const key = item.dataset.key;
+      const translatedValue = Utility.getStringById(key);
+
+      if (translatedValue) {
+        if (type === 'optgroup') {
+          item.label = translatedValue;
+        } else {
+          item.innerHTML = translatedValue;
         }
-      });
+      }
+    });
   }
 
   /**
